@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Minecraft Bedrock Minimap - Overlay</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html, body {
+        height: 100%;
+        width: 100%;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background-color: #1a1a1a;
+        color: #ffffff;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+
+      /* Custom titlebar for Electron */
+      .titlebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 24px;
+        background-color: #2b2b2b;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 1000;
+        -webkit-app-region: drag;
+        user-select: none;
+      }
+
+      .titlebar-title {
+        flex: 1;
+        text-align: center;
+        font-size: 11px;
+        color: #cccccc;
+        pointer-events: none;
+      }
+
+      .titlebar-controls {
+        display: flex;
+        -webkit-app-region: no-drag;
+      }
+
+      .titlebar-button {
+        width: 32px;
+        height: 24px;
+        background: transparent;
+        border: none;
+        color: #cccccc;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.1s;
+      }
+
+      .titlebar-button:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .titlebar-button.close:hover {
+        background-color: #e81123;
+        color: white;
+      }
+
+      .titlebar-button svg {
+        width: 8px;
+        height: 8px;
+      }
+
+      #app {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 2px; /* Ultra-compact for overlay */
+      }
+      
+      /* When titlebar is shown, adjust app position */
+      body.has-titlebar #app {
+        top: 24px;
+      }
+
+      /* Hide header in overlay mode */
+      .header {
+        display: none;
+      }
+
+      /* Ultra-compact controls for overlay mode */
+      .controls {
+        display: flex;
+        gap: 2px;
+        height: 24px; /* Even more reduced */
+        flex-shrink: 0;
+        margin-bottom: 2px; /* Minimal margin */
+      }
+
+      /* Option to hide controls completely for maximum space */
+      .controls.hidden {
+        display: none;
+      }
+
+      button {
+        padding: 3px 8px; /* Ultra-compact padding */
+        background-color: #333;
+        color: white;
+        border: 1px solid #555;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 10px; /* Even smaller font */
+        transition: background-color 0.2s;
+        min-width: auto;
+      }
+
+      button:hover {
+        background-color: #444;
+      }
+
+      button:active {
+        background-color: #222;
+      }
+
+
+      .minimap-container {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #0a0a0a;
+        border: 0px solid #333;
+        border-radius: 8px;
+        position: relative;
+        overflow: hidden;
+        min-height: 0;
+      }
+
+      #minimap {
+        cursor: crosshair;
+        image-rendering: pixelated;
+        image-rendering: -moz-crisp-edges;
+        image-rendering: crisp-edges;
+        display: block;
+      }
+
+      .position-info {
+        position: absolute;
+        bottom: 2px; /* Ultra-minimal */
+        left: 2px; /* Ultra-minimal */
+        background-color: rgba(0, 0, 0, 0.8);
+        padding: 2px 4px; /* Ultra-compact padding */
+        border-radius: 2px;
+        font-family: monospace;
+        font-size: 9px; /* Even smaller font */
+      }
+
+      .fps-counter {
+        position: absolute;
+        top: 2px; /* Ultra-minimal */
+        right: 2px; /* Ultra-minimal */
+        background-color: rgba(0, 0, 0, 0.8);
+        padding: 2px 4px; /* Ultra-compact padding */
+        border-radius: 2px;
+        font-family: monospace;
+        font-size: 9px; /* Even smaller font */
+        color: #44ff44;
+      }
+
+      .loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        color: #666;
+      }
+
+      .spinner {
+        width: 30px; /* Reduced from 40px */
+        height: 30px; /* Reduced from 40px */
+        border: 3px solid #333; /* Reduced border width */
+        border-top-color: #4caf50;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Hide debug info and performance metrics in overlay mode */
+      #debug-info {
+        display: none !important;
+      }
+
+      #perf-metrics {
+        display: none !important;
+      }
+
+      /* Overlay-specific opacity slider */
+      .overlay-controls {
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        background-color: rgba(0, 0, 0, 0.8);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 10px;
+        color: #ffffff;
+        display: none; /* Hidden by default, shown via JavaScript if needed */
+      }
+
+      .opacity-slider {
+        width: 80px;
+        margin-left: 5px;
+      }
+
+      /* Keyboard shortcut hint - smaller and more compact */
+      .shortcut-hint {
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+        background-color: rgba(0, 0, 0, 0.6);
+        padding: 1px 3px;
+        border-radius: 2px;
+        font-family: monospace;
+        font-size: 8px;
+        color: #888;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Custom titlebar for Electron -->
+    <div class="titlebar" id="titlebar" style="display: none;">
+      <div class="titlebar-title">Minimap</div>
+      <div class="titlebar-controls">
+        <button class="titlebar-button minimize" id="minimize-btn">
+          <svg viewBox="0 0 10 10"><path d="M 0 5 L 10 5" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+        </button>
+        <button class="titlebar-button maximize" id="maximize-btn">
+          <svg viewBox="0 0 10 10"><path d="M 0 0 L 0 10 L 10 10 L 10 0 L 0 0" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+        </button>
+        <button class="titlebar-button close" id="close-btn">
+          <svg viewBox="0 0 10 10"><path d="M 0 0 L 10 10 M 10 0 L 0 10" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="app">
+      <!-- Header is hidden in overlay mode -->
+      <div class="header" style="display: none;">
+        <div class="status">
+          <span class="status-indicator" id="status-indicator"></span>
+          <span id="status-text">Connecting...</span>
+        </div>
+      </div>
+
+      <!-- Ultra-compact controls for overlay -->
+      <div class="controls">
+        <button id="zoom-in" title="Zoom In">＋</button>
+        <button id="zoom-out" title="Zoom Out">－</button>
+        <button id="refresh" title="Refresh">⟳</button>
+        <button id="ore-settings-toggle" title="Ore Settings">⛏️</button>
+        <button id="proxy-settings-toggle" title="Proxy Settings (Ctrl+P)">⚙️</button>
+      </div>
+
+      <!-- Overlay-specific opacity control (optional) -->
+      <div style="margin-left: 155px;" class="overlay-controls" id="overlay-controls">
+        Opacity: <input type="range" class="opacity-slider" id="opacity-slider" min="0.3" max="1.0" step="0.1" value="0.8" />
+      </div>
+
+      <div class="minimap-container">
+        <div class="loading" id="loading">
+          <div class="spinner"></div>
+          <span>Waiting for minimap data...</span>
+        </div>
+        <canvas id="minimap" style="display: none"></canvas>
+        <div class="position-info" id="position-info" style="display: none">
+          X: 0, Z: 0
+        </div>
+        <div class="fps-counter" id="fps-counter" style="display: none">
+          FPS: 0
+        </div>
+      </div>
+      
+      <!-- Debug info and performance metrics are hidden in overlay mode -->
+      <div id="perf-metrics" style="display: none !important;"></div>
+      <div id="debug-info" style="display: none !important;"></div>
+
+      <!-- Keyboard shortcut hint -->
+      <div class="shortcut-hint">Ctrl+/-: opacity | Ctrl+M: minimize | Ctrl+W: close | Right-click: menu</div>
+    </div>
+
+    <script>
+      // Check if running in Electron and setup titlebar
+      if (window.electronAPI) {
+        // Get window settings to determine if we should show custom titlebar
+        window.electronAPI.getSettings().then(settings => {
+          if (settings && settings.frameless) {
+            // Show custom titlebar only in frameless mode
+            document.getElementById('titlebar').style.display = 'flex';
+            document.body.classList.add('has-titlebar');
+            
+            // Handle titlebar buttons
+            document.getElementById('minimize-btn').addEventListener('click', () => {
+              window.electronAPI.minimizeWindow();
+            });
+            
+            document.getElementById('maximize-btn').addEventListener('click', async () => {
+              const isMaximized = await window.electronAPI.isMaximized();
+              if (isMaximized) {
+                window.electronAPI.unmaximizeWindow();
+              } else {
+                window.electronAPI.maximizeWindow();
+              }
+            });
+            
+            document.getElementById('close-btn').addEventListener('click', () => {
+              window.electronAPI.closeWindow();
+            });
+          } else {
+            // Hide custom titlebar when using native frame
+            document.getElementById('titlebar').style.display = 'none';
+          }
+        });
+      }
+    </script>
+    <script type="module" src="src/main.ts"></script>
+  </body>
+</html>

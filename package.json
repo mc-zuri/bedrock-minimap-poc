@@ -1,0 +1,45 @@
+{
+  "name": "@minecraft-bedrock-minimap/root",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Minecraft Bedrock minimap system with TypeScript and Socket.io",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n \"shared,proxy,minimap,web\" -c \"green,blue,magenta,yellow\" \"npm run dev:shared\" \"npm run dev:proxy\" \"npm run dev:minimap\" \"npm run dev:web\"",
+    "dev:shared": "npm -w packages/shared run dev",
+    "dev:proxy": "npm -w packages/bedrock-proxy-server run dev",
+    "dev:minimap": "npm -w packages/minimap-server run dev",
+    "dev:web": "npm -w packages/minimap-web-server run dev",
+    "dev:electron": "npm -w packages/electron-app run start",
+    "dev:all": "concurrently -n \"shared,proxy,minimap,web,electron\" -c \"green,blue,magenta,yellow,cyan\" \"npm run dev:shared\" \"npm run dev:proxy\" \"npm run dev:minimap\" \"npm run dev:web\" \"npm run dev:electron\"",
+    "dev:overlay": "concurrently -n \"shared,proxy,minimap,web,overlay\" -c \"green,blue,magenta,yellow,red\" \"npm run dev:shared\" \"npm run dev:proxy\" \"npm run dev:minimap\" \"npm run dev:web\" \"npm run dev:electron:overlay\"",
+    "dev:electron:overlay": "npm -w packages/electron-app run dev:overlay",
+    "build": "tsc --build --verbose tsconfig.build.json",
+    "build:all": "npm run build -ws --if-present",
+    "clean": "npm run clean -ws --if-present",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run test --if-present",
+    "postinstall": "patch-package",
+    "package:electron": "npm -w packages/electron-app run package",
+    "make:electron": "npm -w packages/electron-app run make",
+    "make:electron:win": "npm -w packages/electron-app run make:win",
+    "make:electron:mac": "npm -w packages/electron-app run make:mac",
+    "make:electron:linux": "npm -w packages/electron-app run make:linux",
+    "build:electron:win": "node scripts/build-windows-app.js",
+    "start:electron:win": "node scripts/run-windows-app.js"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "patch-package": "^8.0.0"
+  }
+}

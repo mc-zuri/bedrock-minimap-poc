@@ -1,0 +1,21 @@
+{
+  "name": "@minecraft-bedrock-minimap/minimap-web-server",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Web client for Minecraft Bedrock minimap",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview --host=0.0.0.0",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@minecraft-bedrock-minimap/shared": "*",
+    "socket.io-client": "^4.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10"
+  }
+}

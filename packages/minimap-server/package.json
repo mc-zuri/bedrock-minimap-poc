@@ -1,0 +1,25 @@
+{
+  "name": "@minecraft-bedrock-minimap/minimap-server",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Minimap server bridging proxy and web clients",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "nodemon src/index.ts",
+    "start": "tsx src/index.ts",
+    "build": "tsc",
+    "clean": "rm -rf dist .tsbuildinfo"
+  },
+  "dependencies": {
+    "@minecraft-bedrock-minimap/shared": "*",
+    "socket.io": "^4.7.2",
+    "socket.io-client": "^4.7.2",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "nodemon": "^3.0.2"
+  }
+}

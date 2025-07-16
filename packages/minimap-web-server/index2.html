@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Minecraft Bedrock Minimap</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html, body {
+        height: 100%;
+        width: 100%;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background-color: #1a1a1a;
+        color: #ffffff;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+
+      /* Custom titlebar for Electron */
+      .titlebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 32px;
+        background-color: #2b2b2b;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 1000;
+        -webkit-app-region: drag;
+        user-select: none;
+      }
+
+      .titlebar-title {
+        flex: 1;
+        text-align: center;
+        font-size: 13px;
+        color: #cccccc;
+        pointer-events: none;
+      }
+
+      .titlebar-controls {
+        display: flex;
+        -webkit-app-region: no-drag;
+      }
+
+      .titlebar-button {
+        width: 46px;
+        height: 32px;
+        background: transparent;
+        border: none;
+        color: #cccccc;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.1s;
+      }
+
+      .titlebar-button:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .titlebar-button.close:hover {
+        background-color: #e81123;
+        color: white;
+      }
+
+      .titlebar-button svg {
+        width: 10px;
+        height: 10px;
+      }
+
+      #app {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+      }
+      
+      /* When titlebar is shown, adjust app position */
+      body.has-titlebar #app {
+        top: 32px;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 60px;
+        flex-shrink: 0;
+        margin-bottom: 20px;
+      }
+
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+      }
+
+      .status-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #ff4444;
+      }
+
+      .status-indicator.connected {
+        background-color: #44ff44;
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+        height: 40px;
+        flex-shrink: 0;
+        margin-bottom: 20px;
+      }
+
+      button {
+        padding: 8px 16px;
+        background-color: #333;
+        color: white;
+        border: 1px solid #555;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.2s;
+      }
+
+      button:hover {
+        background-color: #444;
+      }
+
+      button:active {
+        background-color: #222;
+      }
+
+
+      .minimap-container {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #0a0a0a;
+        border: 0px solid #333;
+        border-radius: 8px;
+        position: relative;
+        overflow: hidden;
+        min-height: 0;
+      }
+
+      #minimap {
+        cursor: crosshair;
+        image-rendering: pixelated;
+        image-rendering: -moz-crisp-edges;
+        image-rendering: crisp-edges;
+        display: block;
+      }
+
+      .position-info {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        background-color: rgba(0, 0, 0, 0.8);
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 12px;
+      }
+
+      .fps-counter {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: rgba(0, 0, 0, 0.8);
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 12px;
+        color: #44ff44;
+      }
+
+      .loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        color: #666;
+      }
+
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #333;
+        border-top-color: #4caf50;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Custom titlebar for Electron -->
+    <div class="titlebar" id="titlebar" style="display: none;">
+      <div class="titlebar-title">Minecraft Bedrock Minimap</div>
+      <div class="titlebar-controls">
+        <button class="titlebar-button minimize" id="minimize-btn">
+          <svg viewBox="0 0 10 10"><path d="M 0 5 L 10 5" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+        </button>
+        <button class="titlebar-button maximize" id="maximize-btn">
+          <svg viewBox="0 0 10 10"><path d="M 0 0 L 0 10 L 10 10 L 10 0 L 0 0" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+        </button>
+        <button class="titlebar-button close" id="close-btn">
+          <svg viewBox="0 0 10 10"><path d="M 0 0 L 10 10 M 10 0 L 0 10" stroke="currentColor" stroke-width="1" fill="none"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="app">
+      <div class="header">
+
+        <div class="status">
+          <span class="status-indicator" id="status-indicator"></span>
+          <span id="status-text">Connecting...</span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="zoom-in">Zoom In</button>
+        <button id="zoom-out">Zoom Out</button>
+        <button id="refresh">Refresh</button>
+        <button id="ore-settings-toggle" title="Ore Settings">⛏️</button>
+      </div>
+
+      <div class="minimap-container">
+        <div class="loading" id="loading">
+          <div class="spinner"></div>
+          <span>Waiting for minimap data...</span>
+        </div>
+        <canvas id="minimap" style="display: none"></canvas>
+        <div class="position-info" id="position-info" style="display: none">
+          X: 0, Z: 0
+        </div>
+        <div class="fps-counter" id="fps-counter" style="display: none">
+          FPS: 0
+        </div>
+      </div>
+      
+      <div id="perf-metrics" style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; color: #44ff44; display: none;"></div>
+    
+      <div id="debug-info" style="margin-left: 500px; display: none; position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.9); padding: 10px; border-radius: 4px; font-family: monospace; font-size: 11px; color: #ffff44; border: 1px solid #666; max-width: 300px;">
+        <div><strong>Debug Info:</strong></div>
+        <div>Canvas Size: <span id="canvas-size">-</span></div>
+        <div>Container Size: <span id="container-size">-</span></div>
+        <div>CSS Size: <span id="css-size">-</span></div>
+        <div>Player Position: <span id="player-pos">-</span></div>
+        <div>Center Calc: <span id="center-calc">-</span></div>
+        <div>Window Size: <span id="window-size">-</span></div>
+      </div>
+    </div>
+
+    <script>
+      // Check if running in Electron and setup titlebar
+      if (window.electronAPI) {
+        // Get window settings to determine if we should show custom titlebar
+        window.electronAPI.getSettings().then(settings => {
+          if (settings && settings.frameless) {
+            // Show custom titlebar only in frameless mode
+            document.getElementById('titlebar').style.display = 'flex';
+            document.body.classList.add('has-titlebar');
+            
+            // Handle titlebar buttons
+            document.getElementById('minimize-btn').addEventListener('click', () => {
+              window.electronAPI.minimizeWindow();
+            });
+            
+            document.getElementById('maximize-btn').addEventListener('click', async () => {
+              const isMaximized = await window.electronAPI.isMaximized();
+              if (isMaximized) {
+                window.electronAPI.unmaximizeWindow();
+              } else {
+                window.electronAPI.maximizeWindow();
+              }
+            });
+            
+            document.getElementById('close-btn').addEventListener('click', () => {
+              window.electronAPI.closeWindow();
+            });
+          } else {
+            // Hide custom titlebar when using native frame
+            document.getElementById('titlebar').style.display = 'none';
+          }
+        });
+      }
+    </script>
+    <script type="module" src="src/main.ts"></script>
+  </body>
+</html>

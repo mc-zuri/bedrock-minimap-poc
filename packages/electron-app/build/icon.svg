@@ -1,0 +1,10 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="#2E7D32" rx="64"/>
+  <rect x="64" y="64" width="384" height="384" fill="#1B5E20" rx="32"/>
+  <rect x="128" y="128" width="64" height="64" fill="#66BB6A"/>
+  <rect x="320" y="128" width="64" height="64" fill="#66BB6A"/>
+  <rect x="128" y="320" width="64" height="64" fill="#66BB6A"/>
+  <rect x="320" y="320" width="64" height="64" fill="#66BB6A"/>
+  <circle cx="256" cy="256" r="32" fill="#FFD54F"/>
+  <text x="256" y="450" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#E8F5E9">MINIMAP</text>
+</svg>

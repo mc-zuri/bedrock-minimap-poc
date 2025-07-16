@@ -1,0 +1,9 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/bedrock-proxy-server" },
+    { "path": "./packages/minimap-server" },
+    { "path": "./packages/minimap-web-server" }
+  ]
+}

@@ -1,0 +1,6 @@
+*.tsbuildinfo
+.env
+node_modules
+/packages/electron-app/out/
+/packages/electron-app/services/
+/packages/shared/dist/

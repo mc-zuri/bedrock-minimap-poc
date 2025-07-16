@@ -1,0 +1,28 @@
+{
+  "name": "@minecraft-bedrock-minimap/bedrock-proxy-server",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Bedrock proxy server for Minecraft minimap system",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "nodemon src/index.ts",
+    "start": "tsx src/index.ts",
+    "build": "tsc",
+    "clean": "rm -rf dist .tsbuildinfo"
+  },
+  "dependencies": {
+    "@minecraft-bedrock-minimap/shared": "*",
+    "bedrock-protocol": "^3.47.0",
+    "csbinary": "^2.1.4",
+    "dotenv": "^16.3.1",
+    "prismarine-chunk": "^1.38.1",
+    "prismarine-registry": "^1.11.0",
+    "socket.io": "^4.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.7",
+    "nodemon": "^3.0.2",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}

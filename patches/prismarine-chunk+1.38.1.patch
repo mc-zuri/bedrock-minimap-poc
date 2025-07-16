@@ -1,0 +1,147 @@
+diff --git a/node_modules/prismarine-chunk/src/bedrock/1.18/BiomeSection.js b/node_modules/prismarine-chunk/src/bedrock/1.18/BiomeSection.js
+index eb7f79b..c51dff8 100644
+--- a/node_modules/prismarine-chunk/src/bedrock/1.18/BiomeSection.js
++++ b/node_modules/prismarine-chunk/src/bedrock/1.18/BiomeSection.js
+@@ -41,7 +41,7 @@ class BiomeSection {
+     this.biomes.read(buf)
+ 
+     // now read palette
+-    if (type === StorageType.Runtime) {
++    if (type === StorageType.Runtime || type === StorageType.NetworkPersistence) {
+       // Shift 1 bit to un-zigzag (we cannot be negative)
+       const biomePaletteLength = buf.readVarInt() >> 1
+       for (let i = 0; i < biomePaletteLength; i++) {
+diff --git a/node_modules/prismarine-chunk/src/bedrock/1.18/ProxyBiomeSection.js b/node_modules/prismarine-chunk/src/bedrock/1.18/ProxyBiomeSection.js
+index 394b0e3..c88e5d7 100644
+--- a/node_modules/prismarine-chunk/src/bedrock/1.18/ProxyBiomeSection.js
++++ b/node_modules/prismarine-chunk/src/bedrock/1.18/ProxyBiomeSection.js
+@@ -1,7 +1,7 @@
+ const BiomeSection = require('./BiomeSection')
+ 
+ /**
+- * Micro-optimization from Mojang's 1.18.x chunk implementation..
++ * Micro-optimization from Mojang's 1.22.x chunk implementation..
+  * Biome sections can point to n-1 section if the data is the same in section `n` and `n-1`
+  * How it works: Server sends biome data for each chunk section from ground up to the world section height.
+  * Ground up, if the biome data is the same as the previous section, it is encoded with a special 0xff
+@@ -42,6 +42,10 @@ class ProxyBiomeSection {
+   export (format, stream) {
+     stream.writeUInt8(0xff)
+   }
++
++  toObject(){
++    return this.target.toObject()
++  }
+ }
+ 
+ module.exports = ProxyBiomeSection
+diff --git a/node_modules/prismarine-chunk/src/bedrock/1.18/SubChunk.js b/node_modules/prismarine-chunk/src/bedrock/1.18/SubChunk.js
+index 35cd853..053fe80 100644
+--- a/node_modules/prismarine-chunk/src/bedrock/1.18/SubChunk.js
++++ b/node_modules/prismarine-chunk/src/bedrock/1.18/SubChunk.js
+@@ -9,7 +9,7 @@ class SubChunk118 extends SubChunk13 {
+     for (let i = 0; i < paletteSize; i++) {
+       const runtimeId = stream.readZigZagVarInt()
+       const block = this.registry.blocksByRuntimeId[runtimeId]
+-      this.palette[storageLayer][i] = { stateId: block.stateId, ...block, count: 0 }
++      this.palette[storageLayer][i] = { stateId: block.stateId, runtimeId, ...block, count: 0 }
+     }
+   }
+ 
+@@ -17,7 +17,7 @@ class SubChunk118 extends SubChunk13 {
+     if ((format === StorageType.Runtime) && (bitsPerBlock === 0)) {
+       this.palette[storageLayer] = []
+       this.blocks[storageLayer] = new PalettedStorage(1)
+-      const stateId = stream.readVarInt() >> 1
++      const stateId = stream.readZigZagVarInt()
+       this.addToPalette(storageLayer, stateId)
+       return
+     }
+diff --git a/node_modules/prismarine-chunk/src/bedrock/1.3/SubChunk.js b/node_modules/prismarine-chunk/src/bedrock/1.3/SubChunk.js
+index 52b233e..e29d3c7 100644
+--- a/node_modules/prismarine-chunk/src/bedrock/1.3/SubChunk.js
++++ b/node_modules/prismarine-chunk/src/bedrock/1.3/SubChunk.js
+@@ -56,7 +56,7 @@ class SubChunk {
+       case 9:
+         storageCount = stream.readByte()
+         if (this.subChunkVersion >= 9) {
+-          this.y = stream.readByte() // Sub Chunk Index
++          this.y = stream.readInt8() // Sub Chunk Index
+         }
+         if (storageCount > 2) {
+           // This is technically not an error, but not currently aware of any servers
+@@ -160,7 +160,7 @@ class SubChunk {
+     stream.writeUInt8(this.subChunkVersion)
+     stream.writeUInt8(this.blocks.length)
+     if (this.subChunkVersion >= 9) { // Caves and cliffs (1.17-1.18)
+-      stream.writeUInt8(this.y)
++      stream.writeInt8(this.y)
+     }
+     for (let l = 0; l < this.blocks.length; l++) {
+       if (compact) this.compact(l) // Compact before encoding
+@@ -185,7 +185,7 @@ class SubChunk {
+ 
+     if (format === StorageType.Runtime) {
+       for (const block of this.palette[storageLayer]) {
+-        stream.writeZigZagVarInt(block.stateId)
++        stream.writeZigZagVarInt(block.runtimeId ?? block.stateId)
+       }
+     } else {
+       for (const block of this.palette[storageLayer]) {
+@@ -271,7 +271,7 @@ class SubChunk {
+   }
+ 
+   addToPalette (l, stateId, count = 0) {
+-    const block = this.registry.blockStates[stateId]
++    const block = this.registry.supportFeature('blockHashes') ? this.registry.blocksByRuntimeId[stateId] : this.registry.blockStates[stateId]
+     this.palette[l].push({ stateId, name: block.name, states: block.states, count })
+     const minBits = neededBits(this.palette[l].length - 1)
+     if (minBits > this.blocks[l].bitsPerBlock) {
+diff --git a/node_modules/prismarine-chunk/src/bedrock/common/CommonChunkColumn.js b/node_modules/prismarine-chunk/src/bedrock/common/CommonChunkColumn.js
+index 4084d74..2bb0c76 100644
+--- a/node_modules/prismarine-chunk/src/bedrock/common/CommonChunkColumn.js
++++ b/node_modules/prismarine-chunk/src/bedrock/common/CommonChunkColumn.js
+@@ -258,7 +258,7 @@ class CommonChunkColumn {
+   toObject () {
+     const sections = this.sections.map(sec => sec?.toObject())
+     const { x, z, chunkVersion, blockEntities } = this
+-    return { x, z, chunkVersion, blockEntities, sections }
++    return { x, z, chunkVersion, blockEntities: {}, sections }
+   }
+ }
+ 
+diff --git a/node_modules/prismarine-chunk/src/bedrock/common/Stream.js b/node_modules/prismarine-chunk/src/bedrock/common/Stream.js
+index 92e34e2..901114b 100644
+--- a/node_modules/prismarine-chunk/src/bedrock/common/Stream.js
++++ b/node_modules/prismarine-chunk/src/bedrock/common/Stream.js
+@@ -275,17 +275,22 @@ class ByteStream {
+   }
+ 
+   // Varints
+-
+   writeVarInt (value) {
+     this.resizeForWriteIfNeeded(9)
+     let offset = 0
+-    while (value >= 0x80) {
+-      this.buffer[this.writeOffset + offset] = (value & 0x7f) | 0x80
+-      value = value >>> 7
+-      offset += 1
+-    }
+-    this.buffer[this.writeOffset + offset] = value
+-    this.writeOffset += offset + 1
++
++    do {
++      let tempByte = value & 0x7f
++      value >>>= 7
++
++      if (value !== 0) {
++        tempByte |= 0x80
++      }
++
++      this.buffer[this.writeOffset + offset] = tempByte
++      offset++
++    } while (value !== 0)
++    this.writeOffset += offset
+   }
+ 
+   readVarInt () {

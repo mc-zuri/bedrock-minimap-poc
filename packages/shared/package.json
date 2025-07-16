@@ -1,0 +1,39 @@
+{
+  "name": "@minecraft-bedrock-minimap/shared",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Shared types and interfaces for Minecraft Bedrock minimap",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./socket-events": {
+      "types": "./src/socket-events.ts",
+      "development": "./src/socket-events.ts",
+      "default": "./dist/socket-events.js"
+    },
+    "./types": {
+      "types": "./src/types.ts",
+      "development": "./src/types.ts",
+      "default": "./dist/types.js"
+    },
+    "./block-colors": {
+      "types": "./src/block-colors.ts",
+      "development": "./src/block-colors.ts",
+      "default": "./dist/block-colors.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist .tsbuildinfo"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "zod": "^4.0.5"
+  }
+}
