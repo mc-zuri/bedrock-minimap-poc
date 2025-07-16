@@ -6,6 +6,8 @@ This project was created as an experiment in AI-assisted development and context
 
 **This is a prototype and will not be maintained, updated, or officially supported.**
 
+![Minecraft with Minimap Overlay](./docs/images/minecraft-bedrock.gif)
+
 ## Overview
 
 A real-time minimap system for Minecraft Bedrock Edition featuring:
