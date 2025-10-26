@@ -31,9 +31,9 @@
     "clean": "rm -rf dist .tsbuildinfo"
   },
   "devDependencies": {
-    "typescript": "^5.3.3"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
-    "zod": "^4.0.5"
+    "zod": "^4.1.12"
   }
 }

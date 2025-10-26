@@ -28,9 +28,9 @@ export type ProxySettings = z.infer<typeof ProxySettingsSchema>;
 
 export const DEFAULT_PROXY_SETTINGS: ProxySettings = {
   minecraft: {
-    version: '1.21.93',
-    serverHost: 'localhost',
-    serverPort: 19132
+    version: '1.21.100',
+    serverHost: '192.168.1.3',
+    serverPort: 20132
   },
   relay: {
     enabled: true,

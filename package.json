@@ -32,14 +32,14 @@
     "start:electron:win": "node scripts/run-windows-app.js"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
-    "typescript": "^5.3.3"
+    "concurrently": "^9.2.1",
+    "typescript": "^5.9.3"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=9.0.0"
+    "node": ">=24.0.0",
+    "npm": ">=11.0.0"
   },
   "dependencies": {
-    "patch-package": "^8.0.0"
+    "patch-package": "^8.0.1"
   }
 }
